@@ -75,8 +75,10 @@ const ANTI_DEBUG_PATTERNS = [
     detect: () => {
       try {
         const src = document.documentElement.innerHTML;
-        // Look for suspiciously long regex literals often used in obfuscated code
-        return /\/[\^\$\.\*\+\?\(\)\[\]\{\}\|\\]{20,}\//i.test(src);
+        // Look for suspiciously long regex literals often used in obfuscated code.
+        // Lowered threshold from 20 to 15 — was missing some shorter obfuscation patterns
+        // I kept running into on a few sites I was testing.
+        return /\/[\^\$\.\*\+\?\(\)\[\]\{\}\|\\]{15,}\//i.test(src);
       } catch (e) {
         return false;
       }
@@ -92,48 +94,4 @@ const ANTI_DEBUG_PATTERNS = [
         return /while\s*\(\s*true\s*\)/.test(src) &&
                /debugger|devtools/i.test(src);
       } catch (e) {
-        return false;
-      }
-    }
-  }
-];
-
-/**
- * Runs all detection heuristics and returns an array of matched pattern IDs.
- * @returns {string[]} Array of matched pattern IDs
- */
-function detectActivePatterns() {
-  const matched = [];
-  for (const pattern of ANTI_DEBUG_PATTERNS) {
-    try {
-      if (pattern.detect()) {
-        matched.push(pattern.id);
-      }
-    } catch (e) {
-      // Silently skip patterns that throw
-    }
-  }
-  return matched;
-}
-
-/**
- * Returns metadata for a given pattern ID.
- * @param {string} id
- * @returns {object|null}
- */
-function getPatternMeta(id) {
-  return ANTI_DEBUG_PATTERNS.find(p => p.id === id) || null;
-}
-
-/**
- * Returns all known pattern metadata (for display in popup).
- * @returns {object[]}
- */
-function getAllPatterns() {
-  return ANTI_DEBUG_PATTERNS.map(({ id, label, description }) => ({ id, label, description }));
-}
-
-// Export for use in content.js / background.js via chrome extension messaging
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { detectActivePatterns, getPatternMeta, getAllPatterns };
-}
+        return false
